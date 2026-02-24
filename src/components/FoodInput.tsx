@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MealType } from "@/lib/types";
-import { searchFoods, NutritionInfo, parseFoodInput } from "@/lib/nutrition";
+import { searchFoods, NutritionInfo, parseFoodInput, parseNaturalLanguage } from "@/lib/nutrition";
 
 interface FoodInputProps {
   onAdd: (food: {
@@ -36,9 +36,21 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
 
   useEffect(() => {
     if (query.length >= 2) {
+      const { multiplier } = parseNaturalLanguage(query);
       const found = searchFoods(query);
-      setResults(found.slice(0, 6));
-      setShowResults(found.length > 0);
+      // Apply multiplier to dropdown results so users see accurate values
+      const adjusted = multiplier !== 1
+        ? found.map(f => ({
+            ...f,
+            calories: Math.round(f.calories * multiplier),
+            protein: Math.round(f.protein * multiplier * 10) / 10,
+            carbs: Math.round(f.carbs * multiplier * 10) / 10,
+            fat: Math.round(f.fat * multiplier * 10) / 10,
+            serving: `${multiplier}x ${f.serving}`,
+          }))
+        : found;
+      setResults(adjusted.slice(0, 6));
+      setShowResults(adjusted.length > 0);
     } else {
       setResults([]);
       setShowResults(false);
@@ -57,7 +69,7 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
 
   function handleSelectFood(food: NutritionInfo) {
     onAdd({
-      name: food.name,
+      name: query.trim() || food.name,
       calories: food.calories,
       protein: food.protein,
       carbs: food.carbs,
@@ -148,7 +160,7 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
               setQuery(e.target.value);
               if (manualMode) setManualMode(false);
             }}
-            placeholder='Type a food (e.g., "chicken breast", "2 eggs")'
+            placeholder='Try "2 slices of bread" or "4 eggs"'
             className="flex-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-transparent placeholder:text-zinc-400"
           />
           <button

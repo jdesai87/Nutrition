@@ -7,7 +7,27 @@ export interface NutritionInfo {
   serving: string;
 }
 
-// Common foods database with nutrition per typical serving
+// Quantity words for natural language parsing
+const QUANTITY_WORDS: Record<string, number> = {
+  'a': 1, 'an': 1, 'one': 1,
+  'two': 2, 'three': 3, 'four': 4, 'five': 5,
+  'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+  'half': 0.5, 'quarter': 0.25,
+};
+
+// Unit words that get stripped to find the actual food name
+const UNIT_WORDS = new Set([
+  'slice', 'slices', 'piece', 'pieces', 'serving', 'servings',
+  'cup', 'cups', 'bowl', 'bowls', 'scoop', 'scoops',
+  'glass', 'glasses', 'can', 'cans', 'bottle', 'bottles',
+  'stick', 'sticks', 'strip', 'strips', 'link', 'links',
+  'patty', 'patties', 'handful', 'handfuls',
+  'plate', 'plates', 'bar', 'bars',
+]);
+
+const FILLER_WORDS = new Set(['of', 'the', 'some', 'with']);
+
+// Common foods database with nutrition per SINGLE serving unit
 const FOOD_DATABASE: NutritionInfo[] = [
   // Proteins
   { name: "chicken breast", calories: 165, protein: 31, carbs: 0, fat: 3.6, serving: "4 oz" },
@@ -24,10 +44,9 @@ const FOOD_DATABASE: NutritionInfo[] = [
   { name: "tofu", calories: 144, protein: 15, carbs: 3.5, fat: 8, serving: "1/2 block" },
   { name: "tempeh", calories: 195, protein: 20, carbs: 8, fat: 11, serving: "4 oz" },
 
-  // Eggs & Dairy
+  // Eggs & Dairy — "egg" is 1 large egg
   { name: "egg", calories: 72, protein: 6, carbs: 0.4, fat: 5, serving: "1 large" },
-  { name: "eggs", calories: 144, protein: 12, carbs: 0.8, fat: 10, serving: "2 large" },
-  { name: "scrambled eggs", calories: 182, protein: 12, carbs: 2, fat: 14, serving: "2 eggs" },
+  { name: "scrambled egg", calories: 91, protein: 6, carbs: 1, fat: 7, serving: "1 large" },
   { name: "boiled egg", calories: 72, protein: 6, carbs: 0.4, fat: 5, serving: "1 large" },
   { name: "greek yogurt", calories: 130, protein: 17, carbs: 6, fat: 4, serving: "1 cup" },
   { name: "yogurt", calories: 150, protein: 8, carbs: 20, fat: 4, serving: "1 cup" },
@@ -91,7 +110,6 @@ const FOOD_DATABASE: NutritionInfo[] = [
   { name: "pizza slice", calories: 285, protein: 12, carbs: 36, fat: 10, serving: "1 slice" },
   { name: "burrito", calories: 500, protein: 22, carbs: 55, fat: 20, serving: "1 burrito" },
   { name: "taco", calories: 210, protein: 9, carbs: 21, fat: 10, serving: "1 taco" },
-  { name: "tacos", calories: 420, protein: 18, carbs: 42, fat: 20, serving: "2 tacos" },
   { name: "sushi roll", calories: 250, protein: 9, carbs: 38, fat: 7, serving: "6 pieces" },
   { name: "sushi", calories: 250, protein: 9, carbs: 38, fat: 7, serving: "6 pieces" },
   { name: "soup", calories: 150, protein: 8, carbs: 18, fat: 5, serving: "1 bowl" },
@@ -104,11 +122,11 @@ const FOOD_DATABASE: NutritionInfo[] = [
   { name: "grilled cheese", calories: 370, protein: 14, carbs: 30, fat: 22, serving: "1 sandwich" },
 
   // Breakfast items
-  { name: "pancakes", calories: 350, protein: 8, carbs: 55, fat: 10, serving: "3 pancakes" },
+  { name: "pancake", calories: 117, protein: 3, carbs: 18, fat: 3.3, serving: "1 pancake" },
   { name: "waffle", calories: 210, protein: 5, carbs: 25, fat: 10, serving: "1 waffle" },
-  { name: "french toast", calories: 250, protein: 8, carbs: 30, fat: 10, serving: "2 slices" },
-  { name: "bacon", calories: 120, protein: 9, carbs: 0, fat: 9, serving: "3 slices" },
-  { name: "sausage", calories: 170, protein: 8, carbs: 1, fat: 15, serving: "2 links" },
+  { name: "french toast", calories: 125, protein: 4, carbs: 15, fat: 5, serving: "1 slice" },
+  { name: "bacon", calories: 40, protein: 3, carbs: 0, fat: 3, serving: "1 slice" },
+  { name: "sausage", calories: 85, protein: 4, carbs: 0.5, fat: 7.5, serving: "1 link" },
   { name: "smoothie", calories: 200, protein: 5, carbs: 40, fat: 2, serving: "1 medium" },
   { name: "protein smoothie", calories: 250, protein: 25, carbs: 30, fat: 5, serving: "1 medium" },
 
@@ -136,45 +154,149 @@ const FOOD_DATABASE: NutritionInfo[] = [
   { name: "water", calories: 0, protein: 0, carbs: 0, fat: 0, serving: "1 glass" },
 ];
 
+// Convert plural to singular form
+function toSingular(word: string): string {
+  if (word.endsWith('ies') && word.length > 4) return word.slice(0, -3) + 'y';
+  if (word.endsWith('ches') || word.endsWith('shes')) return word.slice(0, -2);
+  if (word.endsWith('ses') || word.endsWith('xes') || word.endsWith('zes')) return word.slice(0, -2);
+  if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && word.length > 2) {
+    return word.slice(0, -1);
+  }
+  return word;
+}
+
+// Convert singular to plural form
+function toPlural(word: string): string {
+  if (word.endsWith('y') && !['ay', 'ey', 'oy', 'uy'].some(e => word.endsWith(e))) {
+    return word.slice(0, -1) + 'ies';
+  }
+  if (['s', 'x', 'z'].some(e => word.endsWith(e)) || word.endsWith('ch') || word.endsWith('sh')) {
+    return word + 'es';
+  }
+  return word + 's';
+}
+
+// Parse natural language input into multiplier + food name
+export function parseNaturalLanguage(input: string): { multiplier: number; foodName: string } {
+  let q = input.toLowerCase().trim();
+  let multiplier = 1;
+
+  // Try numeric multiplier first: "4 eggs", "2.5 cups of rice"
+  const numMatch = q.match(/^(\d+(?:\.\d+)?)\s+(.+)/);
+  if (numMatch) {
+    multiplier = parseFloat(numMatch[1]);
+    q = numMatch[2];
+  } else {
+    // Try word multiplier: "two eggs", "half an avocado"
+    const words = q.split(/\s+/);
+    if (words.length >= 2 && QUANTITY_WORDS[words[0]] !== undefined) {
+      multiplier = QUANTITY_WORDS[words[0]];
+      q = words.slice(1).join(' ');
+    }
+  }
+
+  // Strip unit words and filler words
+  const words = q.split(/\s+/);
+  const cleaned = words.filter(w => !UNIT_WORDS.has(w) && !FILLER_WORDS.has(w));
+
+  // Strip leading articles
+  let foodName = cleaned.join(' ').replace(/^(a|an)\s+/, '').trim();
+
+  // If stripping removed everything, use the pre-stripped version
+  if (!foodName) foodName = q;
+
+  return { multiplier, foodName };
+}
+
+// Smart search that tries original, singular, and plural variants
+function findInDatabase(query: string): NutritionInfo[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+
+  function search(term: string): NutritionInfo[] {
+    const exact = FOOD_DATABASE.filter(f => f.name === term);
+    if (exact.length > 0) return exact;
+
+    const startsWith = FOOD_DATABASE.filter(f => f.name.startsWith(term));
+    if (startsWith.length > 0) return startsWith;
+
+    const contains = FOOD_DATABASE.filter(f => f.name.includes(term));
+    if (contains.length > 0) return contains;
+
+    return [];
+  }
+
+  // Try original query
+  let results = search(q);
+  if (results.length > 0) return results;
+
+  // Try singular form (eggs → egg)
+  const singular = toSingular(q);
+  if (singular !== q) {
+    results = search(singular);
+    if (results.length > 0) return results;
+  }
+
+  // Try plural form (egg → eggs)
+  const plural = toPlural(q);
+  if (plural !== q) {
+    results = search(plural);
+    if (results.length > 0) return results;
+  }
+
+  // Try singular/plural on individual words for multi-word queries
+  const queryWords = q.split(/\s+/);
+  if (queryWords.length > 1) {
+    // Try singularizing the last word: "scrambled eggs" → "scrambled egg"
+    const lastSingular = [...queryWords.slice(0, -1), toSingular(queryWords[queryWords.length - 1])].join(' ');
+    if (lastSingular !== q) {
+      results = search(lastSingular);
+      if (results.length > 0) return results;
+    }
+  }
+
+  // Word match as fallback
+  return FOOD_DATABASE.filter(f =>
+    queryWords.some(w => {
+      const ws = toSingular(w);
+      const wp = toPlural(w);
+      return f.name.includes(w) || f.name.includes(ws) || f.name.includes(wp);
+    })
+  );
+}
+
 export function searchFoods(query: string): NutritionInfo[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
-  // Exact match first
-  const exact = FOOD_DATABASE.filter((f) => f.name === q);
-  if (exact.length > 0) return exact;
+  // Parse natural language to extract just the food name
+  const { foodName } = parseNaturalLanguage(q);
 
-  // Starts with
-  const startsWith = FOOD_DATABASE.filter((f) => f.name.startsWith(q));
-  if (startsWith.length > 0) return startsWith;
+  // Search with the cleaned food name
+  let results = findInDatabase(foodName);
 
-  // Contains
-  const contains = FOOD_DATABASE.filter((f) => f.name.includes(q));
-  if (contains.length > 0) return contains;
+  // If no results with cleaned name, try original query
+  if (results.length === 0 && foodName !== q) {
+    results = findInDatabase(q);
+  }
 
-  // Word match
-  const words = q.split(/\s+/);
-  return FOOD_DATABASE.filter((f) =>
-    words.some((w) => f.name.includes(w))
-  );
+  return results;
 }
 
 export function parseFoodInput(input: string): NutritionInfo | null {
   const q = input.toLowerCase().trim();
   if (!q) return null;
 
-  // Try to extract a multiplier like "2 eggs", "3 slices pizza"
-  const multiplierMatch = q.match(/^(\d+(?:\.\d+)?)\s+(.+)/);
-  let multiplier = 1;
-  let foodQuery = q;
+  const { multiplier, foodName } = parseNaturalLanguage(q);
 
-  if (multiplierMatch) {
-    multiplier = parseFloat(multiplierMatch[1]);
-    foodQuery = multiplierMatch[2];
+  // Search for the food
+  let results = findInDatabase(foodName);
+
+  // Fallback: try the original query without NL processing
+  if (results.length === 0 && foodName !== q) {
+    results = findInDatabase(q);
   }
 
-  // Search the database
-  const results = searchFoods(foodQuery);
   if (results.length === 0) return null;
 
   const match = results[0];
@@ -184,7 +306,7 @@ export function parseFoodInput(input: string): NutritionInfo | null {
     protein: Math.round(match.protein * multiplier * 10) / 10,
     carbs: Math.round(match.carbs * multiplier * 10) / 10,
     fat: Math.round(match.fat * multiplier * 10) / 10,
-    serving: multiplier > 1 ? `${multiplier}x ${match.serving}` : match.serving,
+    serving: multiplier !== 1 ? `${multiplier}x ${match.serving}` : match.serving,
   };
 }
 
