@@ -18,63 +18,47 @@ export function generateSummary(
 ): DaySummary {
   const totals = calculateTotals(entries);
 
-  const calorieDiff = totals.calories - settings.calorieTarget;
   const caloriePercent = (totals.calories / settings.calorieTarget) * 100;
   const proteinPercent = (totals.protein / settings.proteinTarget) * 100;
 
   const feedback: string[] = [];
   const improvements: string[] = [];
 
-  // Calorie assessment
+  // Calories — the energy equation is simple: deficit = fat loss
   if (caloriePercent >= 90 && caloriePercent <= 110) {
-    feedback.push("You nailed your calorie target today.");
-  } else if (caloriePercent < 90) {
-    const deficit = settings.calorieTarget - totals.calories;
-    feedback.push(`You were ${Math.round(deficit)} calories under target. A slight deficit supports weight loss, but don't undereat.`);
-    if (caloriePercent < 70) {
-      improvements.push("Eating too few calories can slow your metabolism. Try to get closer to your target.");
-    }
+    feedback.push("Hit your calorie target. Consistency here is what drives results.");
+  } else if (caloriePercent < 90 && caloriePercent >= 70) {
+    feedback.push("Solid deficit today. That's how fat loss happens.");
+  } else if (caloriePercent < 70) {
+    feedback.push("Big deficit today.");
+    improvements.push("Undereating slows metabolism and costs muscle. Get closer to your target.");
   } else {
-    feedback.push(`You went ${Math.round(calorieDiff)} calories over target.`);
-    if (calorieDiff > 300) {
-      improvements.push("Try to plan meals ahead to stay within your calorie budget.");
+    const over = Math.round(totals.calories - settings.calorieTarget);
+    feedback.push(`${over} cal over target.`);
+    if (over > 300) {
+      improvements.push("One day over won't matter. Just get back on track tomorrow.");
     }
   }
 
-  // Protein assessment
+  // Protein — the muscle-sparing macro. Non-negotiable during a cut.
   if (proteinPercent >= 90) {
-    feedback.push(`Great protein intake at ${Math.round(totals.protein)}g! This helps preserve muscle during weight loss.`);
+    feedback.push(`${Math.round(totals.protein)}g protein — that's protecting your muscle.`);
   } else if (proteinPercent >= 70) {
-    feedback.push(`Protein was decent at ${Math.round(totals.protein)}g but below your ${settings.proteinTarget}g target.`);
-    improvements.push("Add a protein-rich snack like Greek yogurt or a protein shake to hit your target.");
+    improvements.push(`${Math.round(totals.protein)}g protein is okay, but ${settings.proteinTarget}g keeps muscle. Add a shake or eggs.`);
   } else {
-    feedback.push(`Protein was low at ${Math.round(totals.protein)}g (target: ${settings.proteinTarget}g).`);
-    improvements.push("Prioritize protein at every meal. Aim for 25-40g per meal with lean meats, eggs, or dairy.");
+    improvements.push(`Only ${Math.round(totals.protein)}g protein. Muscle needs at least ${settings.proteinTarget}g. Make protein the priority at every meal.`);
   }
 
-  // Meal distribution
+  // Meal patterns — practical observations only
   const mealCounts = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
   entries.forEach((e) => mealCounts[e.meal]++);
 
-  if (mealCounts.breakfast === 0) {
-    improvements.push("You skipped breakfast. A protein-rich breakfast helps control hunger throughout the day.");
+  if (mealCounts.breakfast === 0 && proteinPercent < 90) {
+    improvements.push("Skipping breakfast makes it harder to hit protein. Even eggs or yogurt helps.");
   }
 
   if (mealCounts.snack > 3) {
-    improvements.push("Lots of snacking today. Try to consolidate into planned meals to better track intake.");
-  }
-
-  // Fat and carb balance
-  const fatPercent = ((totals.fat * 9) / Math.max(totals.calories, 1)) * 100;
-  if (fatPercent > 40) {
-    improvements.push("Fat intake was high today. Try swapping some fatty foods for lean protein sources.");
-  }
-
-  // Overall good habits
-  if (entries.some((e) => e.name.toLowerCase().includes("salad") || e.name.toLowerCase().includes("vegetable") || e.name.toLowerCase().includes("broccoli") || e.name.toLowerCase().includes("spinach"))) {
-    feedback.push("Good job including vegetables today.");
-  } else {
-    improvements.push("Try to include more vegetables for fiber and micronutrients.");
+    improvements.push("Lots of snacking — easier to overshoot calories when grazing. Try fewer, bigger meals.");
   }
 
   // Rating
