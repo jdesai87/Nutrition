@@ -37,12 +37,18 @@ export interface DayLog {
   summary?: DaySummary;
 }
 
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "active";
+export type GoalAggressiveness = "conservative" | "moderate" | "aggressive";
+
 export interface UserSettings {
   calorieTarget: number;
   proteinTarget: number;
   carbTarget: number;
   fatTarget: number;
   name: string;
+  weight: number; // lbs
+  activityLevel: ActivityLevel;
+  goalAggressiveness: GoalAggressiveness;
 }
 
 export interface MacroTotals {
