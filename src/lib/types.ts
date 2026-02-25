@@ -38,7 +38,8 @@ export interface DayLog {
 }
 
 export type ActivityLevel = "sedentary" | "light" | "moderate" | "active";
-export type GoalAggressiveness = "conservative" | "moderate" | "aggressive";
+export type GoalType = "cut" | "maintain" | "bulk";
+export type GoalPace = "conservative" | "moderate" | "aggressive";
 
 export interface UserSettings {
   calorieTarget: number;
@@ -48,7 +49,8 @@ export interface UserSettings {
   name: string;
   weight: number; // lbs
   activityLevel: ActivityLevel;
-  goalAggressiveness: GoalAggressiveness;
+  goalType: GoalType;
+  goalPace: GoalPace;
 }
 
 export interface MacroTotals {
