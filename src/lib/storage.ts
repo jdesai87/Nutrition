@@ -74,6 +74,12 @@ export function removeFoodEntry(date: string, entryId: string): DayLog {
   return day;
 }
 
+export function deleteDayLog(date: string): void {
+  const days = getAllDays();
+  delete days[date];
+  saveAllDays(days);
+}
+
 export function getRecentDays(count: number = 30): DayLog[] {
   const days = getAllDays();
   return Object.values(days)
