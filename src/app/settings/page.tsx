@@ -63,26 +63,6 @@ export default function SettingsPage() {
               className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             />
           </div>
-
-          <div>
-            <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Carb Target (g)</label>
-            <input
-              type="number"
-              value={settings.carbTarget}
-              onChange={(e) => setSettings({ ...settings, carbTarget: parseInt(e.target.value) || 0 })}
-              className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">Fat Target (g)</label>
-            <input
-              type="number"
-              value={settings.fatTarget}
-              onChange={(e) => setSettings({ ...settings, fatTarget: parseInt(e.target.value) || 0 })}
-              className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            />
-          </div>
         </div>
 
         <button
@@ -103,39 +83,39 @@ export default function SettingsPage() {
         <div className="space-y-2">
           <button
             onClick={() => {
-              setSettings({ ...settings, calorieTarget: 1500, proteinTarget: 130, carbTarget: 150, fatTarget: 50 });
+              setSettings({ ...settings, calorieTarget: 1500, proteinTarget: 130 });
             }}
             className="w-full text-left p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Aggressive Cut</p>
-            <p className="text-xs text-zinc-400">1500 cal / 130g protein / 150g carbs / 50g fat</p>
+            <p className="text-xs text-zinc-400">1500 cal / 130g protein</p>
           </button>
           <button
             onClick={() => {
-              setSettings({ ...settings, calorieTarget: 1800, proteinTarget: 150, carbTarget: 180, fatTarget: 55 });
+              setSettings({ ...settings, calorieTarget: 1800, proteinTarget: 150 });
             }}
             className="w-full text-left p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Moderate Cut</p>
-            <p className="text-xs text-zinc-400">1800 cal / 150g protein / 180g carbs / 55g fat</p>
+            <p className="text-xs text-zinc-400">1800 cal / 150g protein</p>
           </button>
           <button
             onClick={() => {
-              setSettings({ ...settings, calorieTarget: 2000, proteinTarget: 150, carbTarget: 200, fatTarget: 65 });
+              setSettings({ ...settings, calorieTarget: 2000, proteinTarget: 150 });
             }}
             className="w-full text-left p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Mild Deficit</p>
-            <p className="text-xs text-zinc-400">2000 cal / 150g protein / 200g carbs / 65g fat</p>
+            <p className="text-xs text-zinc-400">2000 cal / 150g protein</p>
           </button>
           <button
             onClick={() => {
-              setSettings({ ...settings, calorieTarget: 2200, proteinTarget: 180, carbTarget: 220, fatTarget: 70 });
+              setSettings({ ...settings, calorieTarget: 2500, proteinTarget: 180 });
             }}
             className="w-full text-left p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Active / Maintenance</p>
-            <p className="text-xs text-zinc-400">2200 cal / 180g protein / 220g carbs / 70g fat</p>
+            <p className="text-xs text-zinc-400">2500 cal / 180g protein</p>
           </button>
         </div>
         <p className="text-[10px] text-zinc-400">Tap a preset, then hit Save Settings above</p>
