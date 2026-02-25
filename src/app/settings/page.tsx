@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserSettings, ActivityLevel, GoalAggressiveness } from "@/lib/types";
+import { UserSettings, ActivityLevel, GoalType, GoalPace } from "@/lib/types";
 import { getSettings, saveSettings, DEFAULT_SETTINGS, calculateTargets } from "@/lib/storage";
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string }[] = [
@@ -11,24 +11,45 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string }[] 
   { value: "active", label: "Very Active", desc: "6-7 days/week" },
 ];
 
-const GOAL_OPTIONS: { value: GoalAggressiveness; label: string; desc: string }[] = [
-  { value: "conservative", label: "Slow & Steady", desc: "~0.6 lb/week, 300 cal deficit" },
-  { value: "moderate", label: "Moderate", desc: "~1 lb/week, 500 cal deficit" },
-  { value: "aggressive", label: "Aggressive", desc: "~1.5 lb/week, 750 cal deficit" },
+const GOAL_TYPE_OPTIONS: { value: GoalType; label: string; desc: string }[] = [
+  { value: "cut", label: "Cut", desc: "Lose fat, keep muscle" },
+  { value: "maintain", label: "Maintain", desc: "Stay where you are" },
+  { value: "bulk", label: "Bulk", desc: "Build muscle, gain weight" },
 ];
+
+const PACE_OPTIONS: Record<GoalType, { value: GoalPace; label: string; desc: string }[]> = {
+  cut: [
+    { value: "conservative", label: "Slow & Steady", desc: "~0.6 lb/week, 300 cal deficit" },
+    { value: "moderate", label: "Moderate", desc: "~1 lb/week, 500 cal deficit" },
+    { value: "aggressive", label: "Aggressive", desc: "~1.5 lb/week, 750 cal deficit" },
+  ],
+  maintain: [],
+  bulk: [
+    { value: "conservative", label: "Lean Bulk", desc: "+200 cal, minimize fat gain" },
+    { value: "moderate", label: "Moderate", desc: "+350 cal, balanced growth" },
+    { value: "aggressive", label: "Full Send", desc: "+500 cal, maximize muscle gain" },
+  ],
+};
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setSettings(getSettings());
+    const loaded = getSettings();
+    // Migrate old settings that don't have goalType
+    if (!loaded.goalType) {
+      loaded.goalType = "cut";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      loaded.goalPace = (loaded as any).goalAggressiveness as GoalPace || "moderate";
+    }
+    setSettings(loaded);
   }, []);
 
-  function recalcFromWeight(weight: number, activity: ActivityLevel, goal: GoalAggressiveness) {
+  function recalc(weight: number, activity: ActivityLevel, goalType: GoalType, goalPace: GoalPace) {
     if (weight <= 0) return;
-    const targets = calculateTargets(weight, activity, goal);
-    setSettings((s) => ({ ...s, weight, activityLevel: activity, goalAggressiveness: goal, ...targets }));
+    const targets = calculateTargets(weight, activity, goalType, goalPace);
+    setSettings((s) => ({ ...s, weight, activityLevel: activity, goalType, goalPace, ...targets }));
   }
 
   function handleSave() {
@@ -52,6 +73,7 @@ export default function SettingsPage() {
   }
 
   const hasWeight = settings.weight > 0;
+  const paceOptions = PACE_OPTIONS[settings.goalType] || [];
 
   return (
     <div className="px-4 pt-6 space-y-6">
@@ -73,7 +95,7 @@ export default function SettingsPage() {
             onChange={(e) => {
               const w = parseInt(e.target.value) || 0;
               setSettings((s) => ({ ...s, weight: w }));
-              if (w > 0) recalcFromWeight(w, settings.activityLevel, settings.goalAggressiveness);
+              if (w > 0) recalc(w, settings.activityLevel, settings.goalType, settings.goalPace);
             }}
             className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
           />
@@ -87,7 +109,7 @@ export default function SettingsPage() {
                 key={opt.value}
                 onClick={() => {
                   setSettings((s) => ({ ...s, activityLevel: opt.value }));
-                  if (settings.weight > 0) recalcFromWeight(settings.weight, opt.value, settings.goalAggressiveness);
+                  if (settings.weight > 0) recalc(settings.weight, opt.value, settings.goalType, settings.goalPace);
                 }}
                 className={`text-left p-3 rounded-xl border transition-colors ${
                   settings.activityLevel === opt.value
@@ -103,28 +125,55 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Goal */}
+      {/* Goal Type */}
       <div className="space-y-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Fat Loss Goal</h2>
-        <div className="space-y-2">
-          {GOAL_OPTIONS.map((opt) => (
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Goal</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {GOAL_TYPE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => {
-                setSettings((s) => ({ ...s, goalAggressiveness: opt.value }));
-                if (settings.weight > 0) recalcFromWeight(settings.weight, settings.activityLevel, opt.value);
+                const newPace = opt.value === "maintain" ? "moderate" : settings.goalPace;
+                setSettings((s) => ({ ...s, goalType: opt.value, goalPace: newPace }));
+                if (settings.weight > 0) recalc(settings.weight, settings.activityLevel, opt.value, newPace);
               }}
-              className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                settings.goalAggressiveness === opt.value
+              className={`text-center p-3 rounded-xl border transition-colors ${
+                settings.goalType === opt.value
                   ? "border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800"
                   : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
               }`}
             >
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{opt.label}</p>
-              <p className="text-xs text-zinc-400">{opt.desc}</p>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{opt.label}</p>
+              <p className="text-[10px] text-zinc-400">{opt.desc}</p>
             </button>
           ))}
         </div>
+
+        {/* Pace (only for cut/bulk) */}
+        {paceOptions.length > 0 && (
+          <div>
+            <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-2">Pace</label>
+            <div className="space-y-2">
+              {paceOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setSettings((s) => ({ ...s, goalPace: opt.value }));
+                    if (settings.weight > 0) recalc(settings.weight, settings.activityLevel, settings.goalType, opt.value);
+                  }}
+                  className={`w-full text-left p-3 rounded-xl border transition-colors ${
+                    settings.goalPace === opt.value
+                      ? "border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800"
+                      : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{opt.label}</p>
+                  <p className="text-xs text-zinc-400">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Calculated Targets */}

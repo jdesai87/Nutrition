@@ -1,4 +1,4 @@
-import { DayLog, FoodEntry, UserSettings, ActivityLevel, GoalAggressiveness } from "./types";
+import { DayLog, FoodEntry, UserSettings, ActivityLevel, GoalType, GoalPace } from "./types";
 
 const DAYS_KEY = "nutrition_days";
 const SETTINGS_KEY = "nutrition_settings";
@@ -10,20 +10,35 @@ const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   active: 16,
 };
 
-const DEFICIT_MAP: Record<GoalAggressiveness, number> = {
-  conservative: 300,  // ~0.6 lb/week
-  moderate: 500,      // ~1 lb/week
-  aggressive: 750,    // ~1.5 lb/week
+// Calorie adjustment from maintenance
+const CALORIE_ADJUSTMENTS: Record<GoalType, Record<GoalPace, number>> = {
+  cut: { conservative: -300, moderate: -500, aggressive: -750 },
+  maintain: { conservative: 0, moderate: 0, aggressive: 0 },
+  bulk: { conservative: 200, moderate: 350, aggressive: 500 },
 };
 
-export function calculateTargets(weight: number, activity: ActivityLevel, goal: GoalAggressiveness) {
+// Protein per lb bodyweight
+const PROTEIN_PER_LB: Record<GoalType, number> = {
+  cut: 1.0,      // high to preserve muscle in deficit
+  maintain: 0.8, // enough to maintain
+  bulk: 1.0,     // high to build muscle
+};
+
+// Fat per lb bodyweight
+const FAT_PER_LB: Record<GoalType, number> = {
+  cut: 0.3,      // lower to save calories for protein
+  maintain: 0.35,
+  bulk: 0.4,     // higher since calories allow it
+};
+
+export function calculateTargets(weight: number, activity: ActivityLevel, goalType: GoalType, goalPace: GoalPace) {
   const maintenance = weight * ACTIVITY_MULTIPLIERS[activity];
-  const deficit = DEFICIT_MAP[goal];
-  const calories = Math.round(maintenance - deficit);
-  const protein = Math.round(weight); // 1g per lb — gold standard for muscle preservation
-  const fat = Math.round(weight * 0.35); // 0.35g per lb
+  const adjustment = CALORIE_ADJUSTMENTS[goalType][goalPace];
+  const calories = Math.round(maintenance + adjustment);
+  const protein = Math.round(weight * PROTEIN_PER_LB[goalType]);
+  const fat = Math.round(weight * FAT_PER_LB[goalType]);
   const carbCalories = calories - (protein * 4) - (fat * 9);
-  const carbs = Math.round(Math.max(carbCalories / 4, 50)); // floor at 50g
+  const carbs = Math.round(Math.max(carbCalories / 4, 50));
   return { calorieTarget: calories, proteinTarget: protein, carbTarget: carbs, fatTarget: fat };
 }
 
@@ -35,7 +50,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   name: "",
   weight: 0,
   activityLevel: "moderate",
-  goalAggressiveness: "moderate",
+  goalType: "cut",
+  goalPace: "moderate",
 };
 
 function getItem<T>(key: string, fallback: T): T {
