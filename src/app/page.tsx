@@ -113,7 +113,7 @@ export default function Home() {
         </div>
       ) : (
         <>
-          {/* Macro progress bars */}
+          {/* Macro progress bars — calories + protein only */}
           <div className="space-y-3 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
             <MacroBar
               label="Calories"
@@ -129,20 +129,6 @@ export default function Home() {
               unit="g"
               color="bg-emerald-500"
             />
-            <MacroBar
-              label="Carbs"
-              current={totals.carbs}
-              target={settings.carbTarget}
-              unit="g"
-              color="bg-blue-500"
-            />
-            <MacroBar
-              label="Fat"
-              current={totals.fat}
-              target={settings.fatTarget}
-              unit="g"
-              color="bg-orange-500"
-            />
           </div>
 
           {/* Food input */}
@@ -152,7 +138,7 @@ export default function Home() {
 
           {/* Suggestions */}
           <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            <MealSuggestions totals={totals} settings={settings} />
+            <MealSuggestions totals={totals} settings={settings} entries={dayLog.entries} />
           </div>
 
           {/* Food log */}

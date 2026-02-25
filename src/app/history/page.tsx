@@ -6,6 +6,20 @@ import { getRecentDays, getSettings } from "@/lib/storage";
 import { calculateTotals } from "@/lib/summary";
 import DaySummaryComponent from "@/components/DaySummary";
 
+const MEAL_LABELS: Record<string, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+const MEAL_COLORS: Record<string, string> = {
+  breakfast: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  lunch: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  dinner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  snack: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700/50 dark:text-zinc-400",
+};
+
 export default function HistoryPage() {
   const [days, setDays] = useState<DayLog[]>([]);
   const [selectedDay, setSelectedDay] = useState<DayLog | null>(null);
@@ -50,36 +64,30 @@ export default function HistoryPage() {
         {selectedDay.summary ? (
           <DaySummaryComponent summary={selectedDay.summary} />
         ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{Math.round(totals.calories)}</p>
-                <p className="text-xs text-zinc-400">Calories</p>
-              </div>
-              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totals.protein)}g</p>
-                <p className="text-xs text-zinc-400">Protein</p>
-              </div>
-              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(totals.carbs)}g</p>
-                <p className="text-xs text-zinc-400">Carbs</p>
-              </div>
-              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-                <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{Math.round(totals.fat)}g</p>
-                <p className="text-xs text-zinc-400">Fat</p>
-              </div>
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+              <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{Math.round(totals.calories)}</p>
+              <p className="text-xs text-zinc-400">Calories</p>
+            </div>
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totals.protein)}g</p>
+              <p className="text-xs text-zinc-400">Protein</p>
             </div>
           </div>
         )}
 
-        {/* Day's food entries */}
-        <div className="space-y-1">
+        {/* Day's food entries with meal badges */}
+        <div className="space-y-1.5">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Food Log</h3>
           {selectedDay.entries.map((entry) => (
-            <div key={entry.id} className="flex justify-between items-center py-2 px-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
+            <div key={entry.id} className="flex justify-between items-center py-2.5 px-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
               <div>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 capitalize">{entry.name}</p>
-                <p className="text-xs text-zinc-400 capitalize">{entry.meal}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 capitalize">{entry.name}</p>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${MEAL_COLORS[entry.meal] || ""}`}>
+                    {MEAL_LABELS[entry.meal] || entry.meal}
+                  </span>
+                </div>
               </div>
               <div className="text-xs text-zinc-500 text-right">
                 <p>{entry.calories} cal</p>

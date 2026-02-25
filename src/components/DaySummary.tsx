@@ -24,23 +24,15 @@ export default function DaySummary({ summary }: DaySummaryProps) {
         <p className={`text-2xl font-bold ${config.color}`}>{config.label}</p>
       </div>
 
-      {/* Macro summary */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{summary.totalCalories}</p>
+      {/* Macro summary — calories + protein only */}
+      <div className="grid grid-cols-2 gap-3 text-center">
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{summary.totalCalories}</p>
           <p className="text-xs text-zinc-400">Calories</p>
         </div>
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{summary.totalProtein}g</p>
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.totalProtein}g</p>
           <p className="text-xs text-zinc-400">Protein</p>
-        </div>
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{summary.totalCarbs}g</p>
-          <p className="text-xs text-zinc-400">Carbs</p>
-        </div>
-        <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{summary.totalFat}g</p>
-          <p className="text-xs text-zinc-400">Fat</p>
         </div>
       </div>
 

@@ -29,8 +29,6 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
   const [manualMode, setManualMode] = useState(false);
   const [manualCals, setManualCals] = useState("");
   const [manualProtein, setManualProtein] = useState("");
-  const [manualCarbs, setManualCarbs] = useState("");
-  const [manualFat, setManualFat] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLFormElement>(null);
 
@@ -38,7 +36,6 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
     if (query.length >= 2) {
       const { multiplier } = parseNaturalLanguage(query);
       const found = searchFoods(query);
-      // Apply multiplier to dropdown results so users see accurate values
       const adjusted = multiplier !== 1
         ? found.map(f => ({
             ...f,
@@ -92,14 +89,12 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
         name: query.trim(),
         calories: parseFloat(manualCals) || 0,
         protein: parseFloat(manualProtein) || 0,
-        carbs: parseFloat(manualCarbs) || 0,
-        fat: parseFloat(manualFat) || 0,
+        carbs: 0,
+        fat: 0,
         meal,
       });
       setManualCals("");
       setManualProtein("");
-      setManualCarbs("");
-      setManualFat("");
     } else {
       const parsed = parseFoodInput(query);
       if (parsed) {
@@ -112,7 +107,6 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
           meal,
         });
       } else {
-        // If not found, switch to manual mode
         setManualMode(true);
         return;
       }
@@ -195,13 +189,13 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
         )}
       </form>
 
-      {/* Manual entry mode */}
+      {/* Manual entry mode — calories + protein only */}
       {manualMode && (
         <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-2">
           <p className="text-xs text-amber-700 dark:text-amber-400">
-            &ldquo;{query}&rdquo; not found in database. Enter nutrition info manually:
+            &ldquo;{query}&rdquo; not found. Enter calories and protein:
           </p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
               placeholder="Calories*"
@@ -214,20 +208,6 @@ export default function FoodInput({ onAdd }: FoodInputProps) {
               placeholder="Protein (g)"
               value={manualProtein}
               onChange={(e) => setManualProtein(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            />
-            <input
-              type="number"
-              placeholder="Carbs (g)"
-              value={manualCarbs}
-              onChange={(e) => setManualCarbs(e.target.value)}
-              className="px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            />
-            <input
-              type="number"
-              placeholder="Fat (g)"
-              value={manualFat}
-              onChange={(e) => setManualFat(e.target.value)}
               className="px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             />
           </div>
