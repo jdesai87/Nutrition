@@ -11,6 +11,13 @@ export interface FoodEntry {
   timestamp: number;
 }
 
+export interface MacroInsight {
+  label: string;
+  actual: number;
+  target: number;
+  unit: string;
+}
+
 export interface DaySummary {
   totalCalories: number;
   totalProtein: number;
@@ -19,6 +26,8 @@ export interface DaySummary {
   rating: "excellent" | "good" | "fair" | "poor";
   feedback: string[];
   improvements: string[];
+  macroInsights: MacroInsight[];
+  tomorrowTweaks: string[];
 }
 
 export interface DayLog {

@@ -13,28 +13,54 @@ const RATING_CONFIG = {
   poor: { label: "Needs Work", color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-800" },
 };
 
+const BAR_COLORS: Record<string, { fill: string; over: string }> = {
+  Calories: { fill: "bg-zinc-600 dark:bg-zinc-400", over: "bg-red-500" },
+  Protein: { fill: "bg-emerald-500", over: "bg-emerald-500" },
+  Carbs: { fill: "bg-blue-500", over: "bg-amber-500" },
+  Fat: { fill: "bg-amber-500", over: "bg-red-500" },
+};
+
 export default function DaySummary({ summary }: DaySummaryProps) {
   const config = RATING_CONFIG[summary.rating];
+  const macroInsights = summary.macroInsights || [];
+  const tomorrowTweaks = summary.tomorrowTweaks || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Rating */}
       <div className={`text-center py-4 rounded-xl ${config.bg} border ${config.border}`}>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Day Rating</p>
         <p className={`text-2xl font-bold ${config.color}`}>{config.label}</p>
       </div>
 
-      {/* Macro summary — calories + protein only */}
-      <div className="grid grid-cols-2 gap-3 text-center">
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{summary.totalCalories}</p>
-          <p className="text-xs text-zinc-400">Calories</p>
+      {/* Macro breakdown with target bars */}
+      {macroInsights.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Macro Breakdown</h4>
+          {macroInsights.map((m) => {
+            const pct = m.target > 0 ? Math.min((m.actual / m.target) * 100, 100) : 0;
+            const isOver = m.actual > m.target;
+            const colors = BAR_COLORS[m.label] || BAR_COLORS.Calories;
+            return (
+              <div key={m.label}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-zinc-600 dark:text-zinc-400">{m.label}</span>
+                  <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+                    {m.actual}{m.unit}
+                    <span className="text-zinc-400"> / {m.target}{m.unit}</span>
+                  </span>
+                </div>
+                <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isOver ? colors.over : colors.fill}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.totalProtein}g</p>
-          <p className="text-xs text-zinc-400">Protein</p>
-        </div>
-      </div>
+      )}
 
       {/* Feedback */}
       {summary.feedback.length > 0 && (
@@ -55,6 +81,18 @@ export default function DaySummary({ summary }: DaySummaryProps) {
           {summary.improvements.map((imp, i) => (
             <p key={i} className="text-sm text-zinc-600 dark:text-zinc-400 pl-3 border-l-2 border-amber-300 dark:border-amber-700">
               {imp}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Tomorrow tweaks */}
+      {tomorrowTweaks.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Tomorrow, try this</h4>
+          {tomorrowTweaks.map((tweak, i) => (
+            <p key={i} className="text-sm text-zinc-600 dark:text-zinc-400 pl-3 border-l-2 border-blue-300 dark:border-blue-700">
+              {tweak}
             </p>
           ))}
         </div>
