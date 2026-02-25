@@ -1,7 +1,31 @@
-import { DayLog, FoodEntry, UserSettings } from "./types";
+import { DayLog, FoodEntry, UserSettings, ActivityLevel, GoalAggressiveness } from "./types";
 
 const DAYS_KEY = "nutrition_days";
 const SETTINGS_KEY = "nutrition_settings";
+
+const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+  sedentary: 13,
+  light: 14,
+  moderate: 15,
+  active: 16,
+};
+
+const DEFICIT_MAP: Record<GoalAggressiveness, number> = {
+  conservative: 300,  // ~0.6 lb/week
+  moderate: 500,      // ~1 lb/week
+  aggressive: 750,    // ~1.5 lb/week
+};
+
+export function calculateTargets(weight: number, activity: ActivityLevel, goal: GoalAggressiveness) {
+  const maintenance = weight * ACTIVITY_MULTIPLIERS[activity];
+  const deficit = DEFICIT_MAP[goal];
+  const calories = Math.round(maintenance - deficit);
+  const protein = Math.round(weight); // 1g per lb — gold standard for muscle preservation
+  const fat = Math.round(weight * 0.35); // 0.35g per lb
+  const carbCalories = calories - (protein * 4) - (fat * 9);
+  const carbs = Math.round(Math.max(carbCalories / 4, 50)); // floor at 50g
+  return { calorieTarget: calories, proteinTarget: protein, carbTarget: carbs, fatTarget: fat };
+}
 
 export const DEFAULT_SETTINGS: UserSettings = {
   calorieTarget: 2000,
@@ -9,6 +33,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
   carbTarget: 200,
   fatTarget: 65,
   name: "",
+  weight: 0,
+  activityLevel: "moderate",
+  goalAggressiveness: "moderate",
 };
 
 function getItem<T>(key: string, fallback: T): T {

@@ -85,6 +85,39 @@ export function generateSummary(
     tomorrowTweaks.push(`${mealLabel} was ${Math.round((heaviest[1] / totals.calories) * 100)}% of your day's calories. Spreading meals out keeps energy steady and hunger in check.`);
   }
 
+  // Fat analysis — too much fat = calorie dense, easy to overshoot
+  const fatPercent = totals.calories > 0 ? ((totals.fat * 9) / totals.calories) * 100 : 0;
+  if (fatPercent > 40 && caloriePercent > 100) {
+    tomorrowTweaks.push("Fat was over 40% of your calories. Fat is 9 cal/g vs 4 for protein/carbs — small swaps make a big difference. Try cooking spray instead of oil, leaner cuts of meat.");
+  }
+
+  // Carb analysis — low carbs can tank energy, high carbs can spike hunger
+  const carbPercent = (totals.carbs / Math.max(settings.carbTarget, 1)) * 100;
+  if (carbPercent < 50 && caloriePercent < 90) {
+    tomorrowTweaks.push("Very low carbs today. If energy felt off, add rice, oats, or fruit — carbs fuel your workouts and keep you from feeling drained.");
+  } else if (carbPercent > 130 && caloriePercent > 100) {
+    tomorrowTweaks.push("Carbs were high. Swap some refined carbs (bread, pasta, rice) for protein — it's more filling per calorie and protects muscle.");
+  }
+
+  // Protein per meal analysis — spread protein for better absorption
+  const mealProtein: Record<string, number> = {};
+  entries.forEach((e) => {
+    mealProtein[e.meal] = (mealProtein[e.meal] || 0) + e.protein;
+  });
+  const mealProteinEntries = Object.entries(mealProtein);
+  const lowProteinMeals = mealProteinEntries.filter(([, p]) => p < 20);
+  if (lowProteinMeals.length > 0 && proteinPercent < 90) {
+    const mealNames = lowProteinMeals.map(([m]) => m.charAt(0).toUpperCase() + m.slice(1)).join(" and ");
+    tomorrowTweaks.push(`${mealNames} had under 20g protein. Aim for 25-40g per meal — your body can only use so much at once, so spreading it out works better.`);
+  }
+
+  // Lowest protein entry swap — find the weakest link
+  const lowProteinEntries = entries.filter((e) => e.calories > 150 && e.protein < 10);
+  if (lowProteinEntries.length > 0 && proteinPercent < 90) {
+    const worst = lowProteinEntries.sort((a, b) => b.calories - a.calories)[0];
+    tomorrowTweaks.push(`"${worst.name}" was ${worst.calories} cal but only ${worst.protein}g protein. Swapping for something protein-rich saves calories and builds muscle.`);
+  }
+
   // Macro insights with targets
   const macroInsights: MacroInsight[] = [
     { label: "Calories", actual: Math.round(totals.calories), target: settings.calorieTarget, unit: "cal" },
