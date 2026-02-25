@@ -37,6 +37,15 @@ export default function Home() {
 
   useEffect(() => {
     loadDay();
+
+    // Reload when the user returns to the app (new day detection)
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        loadDay();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [loadDay]);
 
   function handleAddFood(food: Omit<FoodEntry, "id" | "timestamp">) {
